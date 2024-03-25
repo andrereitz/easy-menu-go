@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {{template "head.html"}}
+  <title>{{block "title" .}}Easy Menuuu{{end}}</title>
+</head>
+<body>
+  <header>
+    <div class="container py-2 text-center">
+      <a href="/" class="w-100" style="color: var(--color-primary)">
+      </a>
+    </div>
+  </header> 
+  {{block "content" .}}Block Content{{end}}
+</body>
+</html>
