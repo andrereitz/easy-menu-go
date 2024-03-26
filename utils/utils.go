@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -18,7 +19,7 @@ func CreateToken(userID int) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"authorized": true,
-		"id":         userID,
+		"id":         strconv.Itoa(userID),
 		"exp":        time.Now().Add(time.Minute * 15).Unix(),
 	})
 
@@ -40,7 +41,6 @@ func CreateToken(userID int) (string, error) {
 }
 
 func VerifyToken(token *http.Cookie) (map[string]string, error) {
-	fmt.Println("please verify this", token)
 	var decoded string
 	value := token.Value
 	err := s.Decode("jwt-token", value, &decoded)
@@ -50,19 +50,20 @@ func VerifyToken(token *http.Cookie) (map[string]string, error) {
 	}
 
 	claims := jwt.MapClaims{}
-	jwtToken, err := jwt.ParseWithClaims(decoded, claims, func(token *jwt.Token) (interface{}, error) {
+	_, tokenErr := jwt.ParseWithClaims(decoded, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
 
+	fmt.Println(claims["id"])
 	finalMap := map[string]string{}
 
 	for key, val := range claims {
 		if str, ok := val.(string); ok {
 			finalMap[key] = str
 		} else {
-			fmt.Println("Not a string")
+			finalMap[key] = string(str)
 		}
 	}
 
-	return finalMap, err
+	return finalMap, tokenErr
 }

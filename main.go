@@ -23,9 +23,10 @@ func main() {
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
-	r.HandleFunc("/", handlers.IndexHandler)
-	r.HandleFunc("/login", handlers.LoginHandler)
-	r.HandleFunc("/item/{id}", handlers.ItemHandler)
+	r.HandleFunc("/login", handlers.Login).Methods("POST")
+	r.HandleFunc("/logout", handlers.Logout).Methods("POST")
+	r.HandleFunc("/user", handlers.UserInfo).Methods("GET", "POST")
+	// r.HandleFunc("/item/{id}", handlers.ItemHandler)
 
 	srv := &http.Server{
 		Handler:      r,
