@@ -8,18 +8,23 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
+
 	var dir string
 
 	flag.StringVar(&dir, "dir", "./static", "the directory to serve files from. Defaults to the current dir")
 	flag.Parse()
 	r := mux.NewRouter()
+	r.Use(handlers.Authorization)
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
 	r.HandleFunc("/", handlers.IndexHandler)
+	r.HandleFunc("/login", handlers.LoginHandler)
 	r.HandleFunc("/item/{id}", handlers.ItemHandler)
 
 	srv := &http.Server{
