@@ -1,13 +1,17 @@
 package utils
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/securecookie"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtSecret = []byte("sometestsecretkey765")
@@ -16,7 +20,6 @@ var blockKey = []byte("sometestblockkey-securecookie123")
 var s = securecookie.New(hashKey, blockKey)
 
 func CreateToken(userID int) (string, error) {
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"authorized": true,
 		"id":         strconv.Itoa(userID),
@@ -66,4 +69,46 @@ func VerifyToken(token *http.Cookie) (map[string]string, error) {
 	}
 
 	return finalMap, tokenErr
+}
+
+func Getdb() (*sql.DB, error) {
+	path, err := os.Getwd()
+
+	if err != nil {
+		return nil, errors.New("falied to open current working directory")
+	}
+
+	db, err := sql.Open("sqlite3", path+"/data/default.db")
+
+	if err != nil {
+		return nil, errors.New("falied to open connection to database")
+	}
+
+	return db, nil
+}
+
+func GetPasswordHash(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", errors.New("failed to hash password")
+	}
+
+	hashedPasswordString := string(hashedPassword)
+
+	return hashedPasswordString, nil
+}
+
+func ComparePasswordHash(storedPassword []byte, password []byte) error {
+	// storedPasswordhash, err := GetPasswordHash(string(dbpassword))
+
+	// if err != nil {
+	// 	return errors.New("failed to hash provided password")
+	// }
+
+	err := bcrypt.CompareHashAndPassword(storedPassword, password)
+	if err != nil {
+		return errors.New("password does not match")
+	}
+
+	return nil
 }

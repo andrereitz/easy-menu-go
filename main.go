@@ -25,6 +25,7 @@ func main() {
 
 	r.HandleFunc("/login", handlers.Login).Methods("POST")
 	r.HandleFunc("/logout", handlers.Logout).Methods("POST")
+	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/user", handlers.UserInfo).Methods("GET", "POST")
 	// r.HandleFunc("/item/{id}", handlers.ItemHandler)
 

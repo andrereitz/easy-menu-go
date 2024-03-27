@@ -1,33 +1,23 @@
 package handlers
 
 import (
-	"database/sql"
+	"easy-menu/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 )
-
-type UserData struct {
-	Id            *string `json:"id"`
-	Email         *string `json:"email"`
-	BusinessName  *string `json:"business_name"`
-	BusinessUrl   *string `json:"business_url"`
-	BusinessColor *string `json:"business_color"`
-	BusinessLogo  *string `json:"business_logo"`
-}
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(string)
 
-	if r.Method == "GET" {
-		if !ok {
-			http.Error(w, "User not logged in", http.StatusForbidden)
-			return
-		}
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
 
-		path, _ := os.Getwd()
-		db, _ := sql.Open("sqlite3", path+"/data/default.db")
+	if r.Method == "GET" {
+
+		db, _ := utils.Getdb()
 		rows, err := db.Query("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
 
 		if err != nil {
@@ -41,7 +31,6 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 			err := rows.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
 
 			if err != nil {
-				fmt.Println(err)
 				http.Error(w, "Database Error", http.StatusInternalServerError)
 				return
 			}
@@ -58,4 +47,51 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 	}
 
+	if r.Method == "POST" {
+		r.ParseForm()
+		newUserData := UserData{}
+		newUserData.Email = r.FormValue("email")
+
+		businessName := r.FormValue("business_name")
+		newUserData.BusinessName = &businessName
+		businessUrl := r.FormValue("business_url")
+		newUserData.BusinessUrl = &businessUrl
+		businessColor := r.FormValue("business_color")
+		newUserData.BusinessColor = &businessColor
+		businessLogo := r.FormValue("business_logo")
+		newUserData.BusinessLogo = &businessLogo
+
+		db, _ := utils.Getdb()
+
+		stmt, err := db.Prepare("UPDATE users SET email=?, business_name=?, business_url=?, business_color=?, business_logo=? WHERE id = ?")
+		if err != nil {
+			fmt.Println("Error preparing db operation", err)
+
+			http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
+			return
+		}
+
+		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, newUserData.BusinessLogo, user)
+		if err != nil {
+			fmt.Println("Error executing db operation", err)
+
+			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
+			return
+		}
+
+		response := GenericReponse{
+			Message: "User updated successfully",
+			Status:  "Success",
+		}
+
+		respJson, err := json.Marshal(response)
+
+		if err != nil {
+			http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(respJson)
+	}
 }
