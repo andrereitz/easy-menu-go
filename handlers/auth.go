@@ -4,13 +4,10 @@ import (
 	"context"
 	"easy-menu/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-
-	"github.com/gorilla/mux"
 )
 
 func Authorization(next http.Handler) http.Handler {
@@ -152,9 +149,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("email")
 	password := r.FormValue("password")
-	fmt.Println("The email: ", email)
+
 	if email == "" || password == "" {
-		fmt.Println("email is empty")
 		http.Error(w, "Email and Password is required", http.StatusBadRequest)
 		return
 	}
@@ -173,7 +169,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	stmt, err := db.Prepare("INSERT INTO users (email, hash) VALUES (?, ?)")
 
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Error performing db prepare", http.StatusBadRequest)
 		return
 	}
@@ -181,10 +176,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	_, err = stmt.Exec(newUser.Email, newUser.Hash)
 
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Error performing db insertion", http.StatusBadRequest)
 		return
 	}
+
+	stmt.Close()
 
 	response := GenericReponse{
 		Message: "User created successfully",
@@ -200,10 +196,4 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(respJson)
-}
-
-func ItemHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Item: %v\n", vars["id"])
 }

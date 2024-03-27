@@ -27,7 +27,9 @@ func main() {
 	r.HandleFunc("/logout", handlers.Logout).Methods("POST")
 	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/user", handlers.UserInfo).Methods("GET", "POST")
-	// r.HandleFunc("/item/{id}", handlers.ItemHandler)
+	r.HandleFunc("/category/new", handlers.NewCategory).Methods("POST")
+	r.HandleFunc("/category/all", handlers.Categories).Methods("GET")
+	r.HandleFunc("/category/{id}", handlers.Category).Methods("GET")
 
 	srv := &http.Server{
 		Handler:      r,

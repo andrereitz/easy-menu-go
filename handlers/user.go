@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"easy-menu/utils"
 	"encoding/json"
 	"fmt"
@@ -18,22 +19,19 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 
 		db, _ := utils.Getdb()
-		rows, err := db.Query("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
+		defer db.Close()
 
-		if err != nil {
-			http.Error(w, "Failed to get user data", http.StatusInternalServerError)
-			return
-		}
+		row := db.QueryRow("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
 
 		var userData UserData
+		err := row.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
 
-		for rows.Next() {
-			err := rows.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
-
-			if err != nil {
-				http.Error(w, "Database Error", http.StatusInternalServerError)
-				return
-			}
+		if err == sql.ErrNoRows {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, "Error fetching category", http.StatusNotFound)
+			return
 		}
 
 		jsonData, err := json.Marshal(userData)
@@ -65,11 +63,11 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 
 		stmt, err := db.Prepare("UPDATE users SET email=?, business_name=?, business_url=?, business_color=?, business_logo=? WHERE id = ?")
 		if err != nil {
-			fmt.Println("Error preparing db operation", err)
-
 			http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
 			return
 		}
+
+		defer stmt.Close()
 
 		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, newUserData.BusinessLogo, user)
 		if err != nil {

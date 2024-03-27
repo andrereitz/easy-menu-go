@@ -5,6 +5,10 @@ type GenericReponse struct {
 	Status  string `json:"status"`
 }
 
+type DataReponse struct {
+	Data any `json:"data"`
+}
+
 type UserData struct {
 	Id            int     `json:"id"`
 	Email         string  `json:"email"`
@@ -17,4 +21,10 @@ type UserData struct {
 type NewUserData struct {
 	Email string `json:"email"`
 	Hash  string `json:"password"`
+}
+
+type CategoryData struct {
+	Id    int    `json:"id"`
+	User  int    `json:"user"`
+	Title string `json:"title"`
 }
