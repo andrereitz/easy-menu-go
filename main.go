@@ -30,6 +30,7 @@ func main() {
 	r.HandleFunc("/category/new", handlers.NewCategory).Methods("POST")
 	r.HandleFunc("/category/all", handlers.Categories).Methods("GET")
 	r.HandleFunc("/category/{id}", handlers.Category).Methods("GET")
+	r.HandleFunc("/category/edit/{id}", handlers.EditCategory).Methods("POST")
 
 	srv := &http.Server{
 		Handler:      r,

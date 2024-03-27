@@ -9,7 +9,7 @@ import (
 )
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(int)
 
 	if !ok {
 		http.Error(w, "Invalid user!", http.StatusForbidden)

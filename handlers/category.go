@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"easy-menu/utils"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 func Category(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(int)
 
 	if !ok {
 		http.Error(w, "Invalid user!", http.StatusForbidden)
@@ -52,7 +53,7 @@ func Category(w http.ResponseWriter, r *http.Request) {
 }
 
 func Categories(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(int)
 
 	if !ok {
 		http.Error(w, "Invalid user!", http.StatusForbidden)
@@ -96,7 +97,7 @@ func Categories(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewCategory(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(int)
 
 	if !ok {
 		http.Error(w, "Invalid user!", http.StatusForbidden)
@@ -116,6 +117,65 @@ func NewCategory(w http.ResponseWriter, r *http.Request) {
 
 	response := GenericReponse{
 		Message: "Category added!",
+		Status:  "Success",
+	}
+
+	respJson, _ := json.Marshal(response)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respJson)
+}
+
+func EditCategory(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		fmt.Println("does it have", ok, user)
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	fmt.Println(user, id)
+
+	db, _ := utils.Getdb()
+	row := db.QueryRow("SELECT * FROM categories WHERE id = ? AND user = ?", id, user)
+
+	var category CategoryData
+	err := row.Scan(&category.Id, &category.User, &category.Title)
+
+	if err != nil {
+		http.Error(w, "Database select error", http.StatusForbidden)
+		return
+	}
+
+	if category.User != user || err != nil {
+		fmt.Println(err, user, category.Id)
+		http.Error(w, "Can't edit this category", http.StatusForbidden)
+		return
+	}
+
+	newTitle := r.FormValue("title")
+	stmt, err := db.Prepare("UPDATE categories SET title = ? WHERE id = ?")
+
+	if err != nil {
+		http.Error(w, "Database prepare error", http.StatusForbidden)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(newTitle, id)
+
+	if err != nil {
+		http.Error(w, "Database exec error", http.StatusForbidden)
+		return
+	}
+
+	response := GenericReponse{
+		Message: "Editted successfully",
 		Status:  "Success",
 	}
 

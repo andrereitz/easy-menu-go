@@ -99,12 +99,6 @@ func GetPasswordHash(password string) (string, error) {
 }
 
 func ComparePasswordHash(storedPassword []byte, password []byte) error {
-	// storedPasswordhash, err := GetPasswordHash(string(dbpassword))
-
-	// if err != nil {
-	// 	return errors.New("failed to hash provided password")
-	// }
-
 	err := bcrypt.CompareHashAndPassword(storedPassword, password)
 	if err != nil {
 		return errors.New("password does not match")

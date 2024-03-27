@@ -5,6 +5,7 @@ import (
 	"easy-menu/utils"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -26,7 +27,8 @@ func Authorization(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", tokenData["id"])
+		id, _ := strconv.Atoi(tokenData["id"])
+		ctx := context.WithValue(r.Context(), "user", id)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
