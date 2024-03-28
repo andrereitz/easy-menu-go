@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"easy-menu/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -130,15 +129,12 @@ func EditCategory(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(int)
 
 	if !ok {
-		fmt.Println("does it have", ok, user)
 		http.Error(w, "Invalid user!", http.StatusForbidden)
 		return
 	}
 
 	vars := mux.Vars(r)
 	id := vars["id"]
-
-	fmt.Println(user, id)
 
 	db, _ := utils.Getdb()
 	row := db.QueryRow("SELECT * FROM categories WHERE id = ? AND user = ?", id, user)
@@ -152,7 +148,6 @@ func EditCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if category.User != user || err != nil {
-		fmt.Println(err, user, category.Id)
 		http.Error(w, "Can't edit this category", http.StatusForbidden)
 		return
 	}

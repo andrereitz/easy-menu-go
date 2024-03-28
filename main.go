@@ -31,6 +31,8 @@ func main() {
 	r.HandleFunc("/category/all", handlers.Categories).Methods("GET")
 	r.HandleFunc("/category/{id}", handlers.Category).Methods("GET")
 	r.HandleFunc("/category/edit/{id}", handlers.EditCategory).Methods("POST")
+	r.HandleFunc("/item/all", handlers.Items).Methods("GET")
+	r.HandleFunc("/item/new", handlers.NewItem).Methods("POST")
 
 	srv := &http.Server{
 		Handler:      r,

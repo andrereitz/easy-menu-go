@@ -2,10 +2,11 @@ package utils
 
 import (
 	"database/sql"
+	"easy-menu/models"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -23,20 +24,18 @@ func CreateToken(userID int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"authorized": true,
 		"id":         strconv.Itoa(userID),
-		"exp":        time.Now().Add(time.Minute * 15).Unix(),
+		"exp":        time.Now().Add(time.Minute * 1440).Unix(),
 	})
 
 	tokenString, err := token.SignedString(jwtSecret)
 
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 
 	encoded, cookieErr := s.Encode("jwt-token", tokenString)
 
 	if cookieErr != nil {
-		fmt.Println(cookieErr)
 		return "", cookieErr
 	}
 
@@ -57,7 +56,6 @@ func VerifyToken(token *http.Cookie) (map[string]string, error) {
 		return jwtSecret, nil
 	})
 
-	fmt.Println(claims["id"])
 	finalMap := map[string]string{}
 
 	for key, val := range claims {
@@ -105,4 +103,61 @@ func ComparePasswordHash(storedPassword []byte, password []byte) error {
 	}
 
 	return nil
+}
+
+func NullIfZero(s string) sql.NullInt64 {
+	n, err := strconv.Atoi(s)
+	if err != nil || n == 0 {
+		return sql.NullInt64{}
+	}
+
+	return sql.NullInt64{
+		Int64: int64(n),
+		Valid: true,
+	}
+}
+
+func NullString(s string) sql.NullString {
+	if len(s) == 0 {
+		return sql.NullString{}
+	}
+	return sql.NullString{
+		String: s,
+		Valid:  true,
+	}
+}
+
+func ParseSqlNullable(Items []models.ItemData) []interface{} {
+	GenericItems := make([]interface{}, 0)
+
+	for _, item := range Items {
+		GenericItem := make(map[string]interface{})
+		t := reflect.TypeOf(item)
+
+		for i := 0; i < t.NumField(); i++ {
+			field := reflect.ValueOf(item).Field(i)
+			fieldType := field.Type()
+			fieldName := t.Field(i)
+
+			if fieldType.String() == "sql.NullInt64" {
+				nullInt64 := field.Interface().(sql.NullInt64)
+				if nullInt64.Valid {
+					GenericItem[fieldName.Name] = nullInt64.Int64
+				}
+			} else if fieldType.String() == "sql.NullString" {
+				nullString := field.Interface().(sql.NullString)
+				if nullString.Valid {
+					GenericItem[fieldName.Name] = nullString.String
+				}
+			} else {
+				value := field.Interface()
+
+				GenericItem[fieldName.Name] = value
+			}
+		}
+
+		GenericItems = append(GenericItems, GenericItem)
+	}
+
+	return GenericItems
 }

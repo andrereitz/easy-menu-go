@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"easy-menu/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -71,8 +70,6 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 
 		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, newUserData.BusinessLogo, user)
 		if err != nil {
-			fmt.Println("Error executing db operation", err)
-
 			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
 			return
 		}
