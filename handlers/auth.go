@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
 	"net/http"
@@ -93,7 +94,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, cookie)
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "Logged in successfully",
 		Status:  "Success",
 	}
@@ -128,7 +129,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, c)
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "Logged out successfully",
 		Status:  "Success",
 	}
@@ -147,7 +148,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 func Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
-	newUser := NewUserData{}
+	newUser := models.NewUserData{}
 
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -184,7 +185,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	stmt.Close()
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "User created successfully",
 		Status:  "Success",
 	}

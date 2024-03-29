@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
 	"net/http"
@@ -22,7 +23,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 
 		row := db.QueryRow("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
 
-		var userData UserData
+		var userData models.UserData
 		err := row.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
 
 		if err == sql.ErrNoRows {
@@ -46,7 +47,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		r.ParseForm()
-		newUserData := UserData{}
+		newUserData := models.UserData{}
 		newUserData.Email = r.FormValue("email")
 
 		businessName := r.FormValue("business_name")
@@ -74,7 +75,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		response := GenericReponse{
+		response := models.GenericReponse{
 			Message: "User updated successfully",
 			Status:  "Success",
 		}

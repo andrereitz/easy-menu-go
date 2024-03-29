@@ -1,13 +1,4 @@
-package handlers
-
-type GenericReponse struct {
-	Message string `json:"message"`
-	Status  string `json:"status"`
-}
-
-type DataReponse struct {
-	Data any `json:"data"`
-}
+package models
 
 type UserData struct {
 	Id            int     `json:"id"`
@@ -21,10 +12,4 @@ type UserData struct {
 type NewUserData struct {
 	Email string `json:"email"`
 	Hash  string `json:"password"`
-}
-
-type CategoryData struct {
-	Id    int    `json:"id"`
-	User  int    `json:"user"`
-	Title string `json:"title"`
 }

@@ -34,7 +34,7 @@ CREATE TABLE items (
   FOREIGN KEY (user) REFERENCES id (users) 
   FOREIGN KEY (category) REFERENCES id (categories) 
   FOREIGN KEY (media_id) REFERENCES id (medias) 
-)
+);
 
 CREATE TABLE medias (
     id INTEGER PRIMARY KEY ASC,

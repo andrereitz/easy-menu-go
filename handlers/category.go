@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
 	"net/http"
@@ -25,7 +26,7 @@ func Category(w http.ResponseWriter, r *http.Request) {
 
 	row := db.QueryRow("SELECT id, user, title FROM categories WHERE id = ? AND user = ?", id, user)
 
-	var category CategoryData
+	var category models.CategoryData
 	err := row.Scan(&category.Id, &category.User, &category.Title)
 
 	if err == sql.ErrNoRows {
@@ -36,7 +37,7 @@ func Category(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := DataReponse{
+	response := models.DataReponse{
 		Data: category,
 	}
 
@@ -71,9 +72,9 @@ func Categories(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	categories := make([]CategoryData, 0)
+	categories := make([]models.CategoryData, 0)
 	for rows.Next() {
-		category := CategoryData{}
+		category := models.CategoryData{}
 		err := rows.Scan(&category.Id, &category.User, &category.Title)
 
 		if err != nil {
@@ -114,7 +115,7 @@ func NewCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "Category added!",
 		Status:  "Success",
 	}
@@ -139,7 +140,7 @@ func EditCategory(w http.ResponseWriter, r *http.Request) {
 	db, _ := utils.Getdb()
 	row := db.QueryRow("SELECT * FROM categories WHERE id = ? AND user = ?", id, user)
 
-	var category CategoryData
+	var category models.CategoryData
 	err := row.Scan(&category.Id, &category.User, &category.Title)
 
 	if err != nil {
@@ -169,7 +170,7 @@ func EditCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "Editted successfully",
 		Status:  "Success",
 	}

@@ -4,9 +4,12 @@ import (
 	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func Items(w http.ResponseWriter, r *http.Request) {
@@ -55,8 +58,8 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.ParseForm()
-	var Item models.ItemData
 
+	var Item models.ItemData
 	Item.User = user
 	Item.Title = r.FormValue("title")
 	Item.Description = utils.NullString(r.FormValue("description"))
@@ -95,7 +98,7 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := GenericReponse{
+	response := models.GenericReponse{
 		Message: "Item create successfully",
 		Status:  "Success",
 	}
@@ -108,5 +111,75 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Write(respJson)
+}
+
+func EditItem(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	r.ParseForm()
+
+	var Item models.ItemData
+	Item.User = user
+	Item.Title = r.FormValue("title")
+	Item.Description = utils.NullString(r.FormValue("description"))
+	Item.Category = utils.NullIfZero(r.FormValue("category"))
+	Item.MediaId = utils.NullIfZero(r.FormValue("media_id"))
+	floatVal, err := strconv.ParseFloat(r.FormValue("price"), 64)
+	if err == nil {
+		Item.Price = floatVal
+	} else {
+		Item.Price = math.NaN()
+	}
+
+	db, _ := utils.Getdb()
+	defer db.Close()
+
+	stmt, err := db.Prepare("UPDATE items SET category = ?, media_id = ?, title = ?, description = ?, price = ? WHERE id = ? AND user = ?")
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error during db prepare", http.StatusInternalServerError)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		Item.Category,
+		Item.MediaId,
+		Item.Title,
+		Item.Description,
+		Item.Price,
+		id,
+		user,
+	)
+
+	if err != nil {
+		http.Error(w, "Error during db exec", http.StatusInternalServerError)
+		return
+	}
+
+	response := models.GenericReponse{
+		Message: "Item editted successfully",
+		Status:  "Success",
+	}
+
+	respJson, err := json.Marshal(response)
+
+	if err != nil {
+		http.Error(w, "Failed to marshal json", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
 	w.Write(respJson)
 }
