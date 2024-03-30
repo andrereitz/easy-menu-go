@@ -27,6 +27,8 @@ func main() {
 	r.HandleFunc("/logout", handlers.Logout).Methods("POST")
 	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/user", handlers.UserInfo).Methods("GET", "POST")
+	r.HandleFunc("/user/logo/add", handlers.AddLogo).Methods("POST")
+	r.HandleFunc("/user/logo/delete", handlers.DeleteLogo).Methods("POST")
 	r.HandleFunc("/category/new", handlers.NewCategory).Methods("POST")
 	r.HandleFunc("/category/all", handlers.Categories).Methods("GET")
 	r.HandleFunc("/category/{id}", handlers.Category).Methods("GET")

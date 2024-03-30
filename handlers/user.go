@@ -5,7 +5,10 @@ import (
 	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 )
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +59,10 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		newUserData.BusinessUrl = &businessUrl
 		businessColor := r.FormValue("business_color")
 		newUserData.BusinessColor = &businessColor
-		businessLogo := r.FormValue("business_logo")
-		newUserData.BusinessLogo = &businessLogo
 
 		db, _ := utils.Getdb()
 
-		stmt, err := db.Prepare("UPDATE users SET email=?, business_name=?, business_url=?, business_color=?, business_logo=? WHERE id = ?")
+		stmt, err := db.Prepare("UPDATE users SET email=?, business_name=?, business_url=?, business_color=? WHERE id = ?")
 		if err != nil {
 			http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
 			return
@@ -69,7 +70,7 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 
 		defer stmt.Close()
 
-		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, newUserData.BusinessLogo, user)
+		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, user)
 		if err != nil {
 			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
 			return
@@ -90,4 +91,125 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(respJson)
 	}
+}
+
+func AddLogo(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	r.ParseMultipartForm(10 << 20)
+
+	file, _, err := r.FormFile("logo")
+
+	if err != nil {
+		http.Error(w, "Error getting file", http.StatusInternalServerError)
+		return
+	}
+
+	defer file.Close()
+
+	tempFile, err := os.CreateTemp("static/media", "business-logo-*.png")
+	if err != nil {
+		http.Error(w, "Error creating file", http.StatusInternalServerError)
+		return
+	}
+
+	defer tempFile.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Error reading image", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tempFile.Write(fileBytes)
+
+	if err != nil {
+		http.Error(w, "Error saving image", http.StatusInternalServerError)
+		return
+	}
+
+	db, err := utils.Getdb()
+
+	if err != nil {
+		http.Error(w, "Error saving image", http.StatusInternalServerError)
+		return
+	}
+
+	defer db.Close()
+
+	stmt, err := db.Prepare("UPDATE users SET business_logo = ? WHERE id = ?")
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		tempFile.Name(),
+		user,
+	)
+
+	if err != nil {
+		http.Error(w, "Error saving to database", http.StatusInternalServerError)
+		return
+	}
+
+	response := models.GenericReponse{
+		Message: "Image uploaded successfully",
+		Status:  "Success",
+	}
+
+	respJson, _ := json.Marshal(response)
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(respJson)
+}
+
+func DeleteLogo(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	var logoPath string
+	db, _ := utils.Getdb()
+
+	defer db.Close()
+
+	row := db.QueryRow("SELECT business_logo FROM users WHERE id = ?", user)
+	err := row.Scan(&logoPath)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	os.Remove(logoPath)
+
+	stmt, _ := db.Prepare("UPDATE users SET business_logo = ? WHERE id = ?")
+
+	defer stmt.Close()
+
+	stmt.Exec(
+		"",
+		user,
+	)
+
+	response := models.GenericReponse{
+		Message: "Logo deleted",
+		Status:  "Success",
+	}
+
+	respJson, _ := json.Marshal(response)
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(respJson)
 }

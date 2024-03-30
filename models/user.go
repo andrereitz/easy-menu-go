@@ -13,3 +13,8 @@ type NewUserData struct {
 	Email string `json:"email"`
 	Hash  string `json:"password"`
 }
+
+type LogoMeta struct {
+	Url  string `json:"url"`
+	User int    `json:"user"`
+}
