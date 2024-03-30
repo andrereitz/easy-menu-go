@@ -5,6 +5,7 @@ import (
 	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -80,6 +81,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	token, err := utils.CreateToken(id)
 
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Error generating and encoding token", http.StatusInternalServerError)
 		return
 	}

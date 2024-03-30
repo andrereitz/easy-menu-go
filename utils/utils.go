@@ -12,13 +12,23 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/securecookie"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte("sometestsecretkey765")
-var hashKey = []byte("sometesthashkey-securecookie123")
-var blockKey = []byte("sometestblockkey-securecookie123")
-var s = securecookie.New(hashKey, blockKey)
+var jwtSecret []byte
+var hashKey []byte
+var blockKey []byte
+var s *securecookie.SecureCookie
+
+func init() {
+	godotenv.Load()
+
+	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+	hashKey = []byte(os.Getenv("HASH_KEY"))
+	blockKey = []byte(os.Getenv("BLOCK_KEY"))
+	s = securecookie.New(hashKey, blockKey)
+}
 
 func CreateToken(userID int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

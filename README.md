@@ -1,6 +1,7 @@
 # easy-menu-go
 
 Easy menu is the same project as [Easy Menu](https://github.com/andrereitz/easy-menu), but written in Go and provided as a service API.
+There are a few differences in implementation from the Python version, but the principle and functionality are the same.
 
 ## Database Schema
 ```
@@ -45,3 +46,6 @@ CREATE TABLE medias (
     FOREIGN KEY (user) REFERENCES id (users)
 )
 ```
+
+## Postman docs
+https://documenter.getpostman.com/view/7804659/2sA35G4N72#27c390ac-f189-4805-8f05-0b23ee19a484
