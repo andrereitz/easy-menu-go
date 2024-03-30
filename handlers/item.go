@@ -210,7 +210,7 @@ func AddItemImage(w http.ResponseWriter, r *http.Request) {
 
 	defer file.Close()
 
-	tempFile, err := os.CreateTemp("static/media", "business-logo-*.png")
+	tempFile, err := os.CreateTemp("static/media", "item-image-*.png")
 	if err != nil {
 		http.Error(w, "Error creating file", http.StatusInternalServerError)
 		return
@@ -277,6 +277,16 @@ func AddItemImage(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		return
 	}
+
+	response := models.GenericReponse{
+		Message: "Item image added",
+		Status:  "Success",
+	}
+
+	respJson, _ := json.Marshal(response)
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(respJson)
 }
 
 func RemoveItemImage(w http.ResponseWriter, r *http.Request) {

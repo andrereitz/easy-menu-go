@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var jwtSecret []byte
