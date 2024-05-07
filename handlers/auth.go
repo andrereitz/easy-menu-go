@@ -35,9 +35,14 @@ func Authorization(next http.Handler) http.Handler {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	user := r.FormValue("email")
-	pass := r.FormValue("password")
+	var requestUser models.UserLogin
+	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	user := requestUser.Email
+	pass := requestUser.Password
 
 	if user == "" || pass == "" {
 		http.Error(w, "please provide all required fields", http.StatusBadRequest)
@@ -90,6 +95,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 
 	http.SetCookie(w, cookie)
@@ -111,7 +117,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	_, ok := r.Context().Value("user").(string)
+	_, ok := r.Context().Value("user").(int)
 
 	if !ok {
 		http.Error(w, "You are not logged in", http.StatusBadRequest)
@@ -119,11 +125,10 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := &http.Cookie{
-		Name:    "jwt-token",
-		Value:   "",
-		Path:    "/",
-		Expires: time.Unix(0, 0),
-
+		Name:     "jwt-token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 	}
 
@@ -199,4 +204,20 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(respJson)
+}
+
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

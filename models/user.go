@@ -1,5 +1,10 @@
 package models
 
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type UserData struct {
 	Id            int     `json:"id"`
 	Email         string  `json:"email"`

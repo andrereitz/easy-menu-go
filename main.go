@@ -20,6 +20,7 @@ func main() {
 	flag.Parse()
 	r := mux.NewRouter()
 	r.Use(handlers.Authorization)
+	r.Use(handlers.CorsMiddleware)
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
