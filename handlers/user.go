@@ -9,6 +9,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+
+	"github.com/skip2/go-qrcode"
 )
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +77,15 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
 			return
+		}
+
+		if len(businessUrl) > 0 {
+			qrpath := "static/qrcodes/" + strconv.Itoa(user) + ".png"
+			err := qrcode.WriteFile(businessUrl, qrcode.Medium, 256, qrpath)
+
+			if err != nil {
+				fmt.Println("Error generating qrcode")
+			}
 		}
 
 		response := models.GenericReponse{

@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -154,17 +155,17 @@ func ParseSqlNullable(Items []models.ItemData) []interface{} {
 			if fieldType.String() == "sql.NullInt64" {
 				nullInt64 := field.Interface().(sql.NullInt64)
 				if nullInt64.Valid {
-					GenericItem[fieldName.Name] = nullInt64.Int64
+					GenericItem[strings.ToLower(fieldName.Name)] = nullInt64.Int64
 				}
 			} else if fieldType.String() == "sql.NullString" {
 				nullString := field.Interface().(sql.NullString)
 				if nullString.Valid {
-					GenericItem[fieldName.Name] = nullString.String
+					GenericItem[strings.ToLower(fieldName.Name)] = nullString.String
 				}
 			} else {
 				value := field.Interface()
 
-				GenericItem[fieldName.Name] = value
+				GenericItem[strings.ToLower(fieldName.Name)] = value
 			}
 		}
 

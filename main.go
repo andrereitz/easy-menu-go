@@ -37,6 +37,8 @@ func main() {
 	r.HandleFunc("/item/all", handlers.Items).Methods("GET")
 	r.HandleFunc("/item/new", handlers.NewItem).Methods("POST")
 	r.HandleFunc("/item/edit/{id}", handlers.EditItem).Methods("POST")
+	r.HandleFunc("/item/delete/{id}", handlers.DeleteItem).Methods("POST")
+	r.HandleFunc("/item/image/{id}", handlers.GetItemImage).Methods("GET")
 	r.HandleFunc("/item/image/add/{id}", handlers.AddItemImage).Methods("POST")
 	r.HandleFunc("/item/image/remove/{id}", handlers.RemoveItemImage).Methods("POST")
 

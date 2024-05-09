@@ -5,6 +5,7 @@ import (
 	"easy-menu/models"
 	"easy-menu/utils"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -33,6 +34,7 @@ func Items(w http.ResponseWriter, r *http.Request) {
 		err := rows.Scan(&Item.Id, &Item.Category, &Item.MediaId, &Item.Title, &Item.Description, &Item.Price, &Item.User)
 		if err != nil {
 			http.Error(w, "Error during row scan", http.StatusInternalServerError)
+			fmt.Println(err)
 			return
 		}
 
@@ -59,19 +61,24 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.ParseForm()
+	err := r.ParseMultipartForm(10000000)
+
+	if err != nil {
+		http.Error(w, "Error parsing multipart form data in NewItem", http.StatusInternalServerError)
+		return
+	}
 
 	var Item models.ItemData
 	Item.User = user
-	Item.Title = r.FormValue("title")
-	Item.Description = utils.NullString(r.FormValue("description"))
-	Item.Category = utils.NullIfZero(r.FormValue("category"))
-	Item.MediaId = utils.NullIfZero(r.FormValue("media_id"))
-	floatVal, err := strconv.ParseFloat(r.FormValue("price"), 64)
+	Item.Title = r.Form.Get("title")
+	Item.Description = utils.NullString(r.Form.Get("description"))
+	Item.Category = utils.NullIfZero(r.Form.Get("category"))
+	Item.MediaId = utils.NullIfZero(r.Form.Get("media_id"))
+	floatVal, err := strconv.ParseFloat(r.Form.Get("price"), 64)
 	if err == nil {
 		Item.Price = floatVal
 	} else {
-		Item.Price = math.NaN()
+		Item.Price = 0.00
 	}
 
 	db, _ := utils.Getdb()
@@ -183,6 +190,80 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-type", "application/json")
 	w.Write(respJson)
+}
+
+func DeleteItem(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	db, _ := utils.Getdb()
+	defer db.Close()
+
+	stmt, err := db.Prepare("DELETE FROM items WHERE id = ? AND user = ?")
+
+	if err != nil {
+		http.Error(w, "Error during db prepare on DeleteItem", http.StatusInternalServerError)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		id,
+		user,
+	)
+
+	if err != nil {
+		http.Error(w, "Error during db exec on DeleteItem", http.StatusInternalServerError)
+		return
+	}
+
+	response := models.GenericReponse{
+		Message: "Item Deleted successfully",
+		Status:  "Success",
+	}
+
+	respJson, err := json.Marshal(response)
+
+	if err != nil {
+		http.Error(w, "Failed to marshal json on DeleteItem", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(respJson)
+}
+
+func GetItemImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if id == "" {
+		http.Error(w, "Image id not provided", http.StatusBadRequest)
+		return
+	}
+
+	db, _ := utils.Getdb()
+	row := db.QueryRow("SELECT url FROM medias WHERE id = ?", id)
+
+	var url string
+	err := row.Scan(&url)
+
+	if err != nil {
+		http.Error(w, "No url found", http.StatusInternalServerError)
+		return
+	}
+
+	defer db.Close()
+
+	http.ServeFile(w, r, url)
 }
 
 func AddItemImage(w http.ResponseWriter, r *http.Request) {
