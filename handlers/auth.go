@@ -34,6 +34,28 @@ func Authorization(next http.Handler) http.Handler {
 	})
 }
 
+func Authorize(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "User not logged in", http.StatusBadRequest)
+		return
+	}
+
+	resp := map[string]interface{}{
+		"id": user,
+	}
+	respJson, err := json.Marshal(resp)
+
+	if err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respJson)
+}
+
 func Login(w http.ResponseWriter, r *http.Request) {
 	var requestUser models.UserLogin
 	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
@@ -117,12 +139,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	_, ok := r.Context().Value("user").(int)
+	// _, ok := r.Context().Value("user").(int)
 
-	if !ok {
-		http.Error(w, "You are not logged in", http.StatusBadRequest)
-		return
-	}
+	// if !ok {
+	// 	http.Error(w, "You are not logged in", http.StatusBadRequest)
+	// 	return
+	// }
 
 	c := &http.Cookie{
 		Name:     "jwt-token",

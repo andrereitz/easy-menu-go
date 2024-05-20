@@ -25,6 +25,7 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
 	r.HandleFunc("/login", handlers.Login).Methods("POST")
+	r.HandleFunc("/authorize", handlers.Authorize).Methods("GET")
 	r.HandleFunc("/logout", handlers.Logout).Methods("POST")
 	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/user", handlers.UserInfo).Methods("GET", "POST")
@@ -34,6 +35,7 @@ func main() {
 	r.HandleFunc("/category/all", handlers.Categories).Methods("GET")
 	r.HandleFunc("/category/{id}", handlers.Category).Methods("GET")
 	r.HandleFunc("/category/edit/{id}", handlers.EditCategory).Methods("POST")
+	r.HandleFunc("/category/delete/{id}", handlers.DeleteCategory).Methods("POST")
 	r.HandleFunc("/item/all", handlers.Items).Methods("GET")
 	r.HandleFunc("/item/new", handlers.NewItem).Methods("POST")
 	r.HandleFunc("/item/edit/{id}", handlers.EditItem).Methods("POST")

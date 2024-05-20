@@ -103,7 +103,7 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		http.Error(w, "Failed during dtabase exec", http.StatusInternalServerError)
+		http.Error(w, "Failed executing item query", http.StatusInternalServerError)
 		return
 	}
 
@@ -134,7 +134,12 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	r.ParseForm()
+	err := r.ParseMultipartForm(10000000)
+
+	if err != nil {
+		http.Error(w, "Error parsing multipart form data in EditItem", http.StatusInternalServerError)
+		return
+	}
 
 	var Item models.ItemData
 	Item.User = user
@@ -148,6 +153,8 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 	} else {
 		Item.Price = math.NaN()
 	}
+
+	fmt.Println(Item)
 
 	db, _ := utils.Getdb()
 	defer db.Close()
@@ -322,12 +329,7 @@ func AddItemImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ImageData := models.LogoMeta{
-		Url:  tempFile.Name(),
-		User: user,
-	}
-
-	result, err := tx.ExecContext(ctx, "INSERT INTO medias (url, user) VALUES (?, ?)", ImageData.Url, ImageData.User)
+	result, err := tx.ExecContext(ctx, "INSERT INTO medias (url, user) VALUES (?, ?)", tempFile.Name(), user)
 
 	if err != nil {
 		http.Error(w, "Transaction failed", http.StatusInternalServerError)
@@ -359,9 +361,10 @@ func AddItemImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.GenericReponse{
+	response := models.ImageAddResponse{
 		Message: "Item image added",
 		Status:  "Success",
+		Data:    imageId,
 	}
 
 	respJson, _ := json.Marshal(response)
