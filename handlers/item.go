@@ -61,7 +61,7 @@ func NewItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := r.ParseMultipartForm(10000000)
+	err := r.ParseMultipartForm(10 << 20)
 
 	if err != nil {
 		http.Error(w, "Error parsing multipart form data in NewItem", http.StatusInternalServerError)
@@ -134,7 +134,7 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	err := r.ParseMultipartForm(10000000)
+	err := r.ParseMultipartForm(10 << 20)
 
 	if err != nil {
 		http.Error(w, "Error parsing multipart form data in EditItem", http.StatusInternalServerError)
@@ -154,12 +154,10 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 		Item.Price = math.NaN()
 	}
 
-	fmt.Println(Item)
-
 	db, _ := utils.Getdb()
 	defer db.Close()
 
-	stmt, err := db.Prepare("UPDATE items SET category = ?, media_id = ?, title = ?, description = ?, price = ? WHERE id = ? AND user = ?")
+	stmt, err := db.Prepare("UPDATE items SET category = ?, title = ?, description = ?, price = ? WHERE id = ? AND user = ?")
 
 	if err != nil {
 		http.Error(w, "Error during db prepare", http.StatusInternalServerError)
@@ -170,7 +168,6 @@ func EditItem(w http.ResponseWriter, r *http.Request) {
 
 	_, err = stmt.Exec(
 		Item.Category,
-		Item.MediaId,
 		Item.Title,
 		Item.Description,
 		Item.Price,

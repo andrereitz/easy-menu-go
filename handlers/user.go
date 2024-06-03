@@ -52,7 +52,12 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		r.ParseForm()
+		err := r.ParseMultipartForm(10 << 20)
+
+		if err != nil {
+			http.Error(w, "Error parsing form", http.StatusInternalServerError)
+			return
+		}
 		newUserData := models.UserData{}
 		newUserData.Email = r.FormValue("email")
 
@@ -62,6 +67,8 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		newUserData.BusinessUrl = &businessUrl
 		businessColor := r.FormValue("business_color")
 		newUserData.BusinessColor = &businessColor
+
+		fmt.Println(&newUserData.Email, &newUserData.BusinessName, &newUserData.BusinessUrl, &newUserData.BusinessColor)
 
 		db, _ := utils.Getdb()
 
