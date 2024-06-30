@@ -210,22 +210,53 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 	db, _ := utils.Getdb()
 	defer db.Close()
 
-	stmt, err := db.Prepare("DELETE FROM items WHERE id = ? AND user = ?")
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
 
 	if err != nil {
-		http.Error(w, "Error during db prepare on DeleteItem", http.StatusInternalServerError)
+		http.Error(w, "Error starting transaction", http.StatusForbidden)
 		return
 	}
 
-	defer stmt.Close()
+	var media_id int
+	errMediaId := tx.QueryRowContext(ctx, "SELECT media_id FROM items WHERE id = ? AND user = ?", id, user).Scan(&media_id)
 
-	_, err = stmt.Exec(
-		id,
-		user,
-	)
+	if errMediaId != nil {
+		fmt.Println("Warning, could not get item image ID")
+	}
+
+	var media_url string
+	err = tx.QueryRowContext(ctx, "SELECT url FROM medias WHERE id = ?", media_id).Scan(&media_url)
+
+	if err != nil {
+		fmt.Println("Warning, could not get image URL")
+	}
+
+	_, err = tx.ExecContext(ctx, "DELETE FROM medias WHERE id = ?", media_id)
+
+	if err != nil {
+		fmt.Println("Warning, could not remove media from database")
+	}
+
+	err = os.Remove(media_url)
+
+	if err != nil {
+		fmt.Println("Failed to remove file from server")
+	}
+
+	_, err = tx.ExecContext(ctx, "DELETE FROM items WHERE id = ? AND user = ?", id, user)
 
 	if err != nil {
 		http.Error(w, "Error during db exec on DeleteItem", http.StatusInternalServerError)
+		tx.Rollback()
+		return
+	}
+
+	errTx := tx.Commit()
+
+	if errTx != nil {
+		http.Error(w, "Error commiting tx", http.StatusInternalServerError)
+		tx.Rollback()
 		return
 	}
 
