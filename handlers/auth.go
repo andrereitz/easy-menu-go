@@ -139,13 +139,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	// _, ok := r.Context().Value("user").(int)
-
-	// if !ok {
-	// 	http.Error(w, "You are not logged in", http.StatusBadRequest)
-	// 	return
-	// }
-
 	c := &http.Cookie{
 		Name:     "jwt-token",
 		Value:    "",
