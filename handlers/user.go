@@ -134,8 +134,16 @@ func UserEditAccount(w http.ResponseWriter, r *http.Request) {
 	db, _ := utils.Getdb()
 	defer db.Close()
 
+	var args []interface{}
+	query := "UPDATE users SET"
+
 	email := r.FormValue("email")
 	password := r.FormValue("password")
+
+	if len(email) > 4 {
+		query += " email = ?,"
+		args = append(args, email)
+	}
 
 	if len(password) > 3 {
 		passwordhash, err := utils.GetPasswordHash(password)
@@ -145,42 +153,15 @@ func UserEditAccount(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stmt, err := db.Prepare("UPDATE user SET hash = ? WHERE user = ?")
-
-		if err != nil {
-			http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
-			return
-		}
-
-		defer stmt.Close()
-
-		_, err = stmt.Exec(
-			passwordhash,
-			user,
-		)
-
-		if err != nil {
-			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
-			return
-		}
-
-		// fmt.Println(passwordhash, user)
-
+		query += " hash = ?,"
+		args = append(args, passwordhash)
 	}
 
-	stmt, err := db.Prepare("UPDATE user SET email = ? WHERE user = ?")
+	query = query[:len(query)-1]
+	query += " WHERE id = ?"
+	args = append(args, user)
 
-	if err != nil {
-		http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
-		return
-	}
-
-	defer stmt.Close()
-
-	_, err = stmt.Exec(
-		email,
-		user,
-	)
+	_, err = db.Exec(query, args...)
 
 	if err != nil {
 		http.Error(w, "Error executing db operation", http.StatusInternalServerError)
