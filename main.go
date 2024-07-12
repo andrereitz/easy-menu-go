@@ -45,6 +45,7 @@ func main() {
 	r.HandleFunc("/item/image/{id}", handlers.GetItemImage).Methods("GET")
 	r.HandleFunc("/item/image/add/{id}", handlers.AddItemImage).Methods("POST")
 	r.HandleFunc("/item/image/remove/{id}", handlers.RemoveItemImage).Methods("POST")
+	r.HandleFunc("/menu/{slug}", handlers.Menu).Methods("GET")
 
 	srv := &http.Server{
 		Handler:      r,
