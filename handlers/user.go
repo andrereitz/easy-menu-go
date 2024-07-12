@@ -9,6 +9,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+
+	"github.com/skip2/go-qrcode"
 )
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
@@ -19,78 +22,166 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "GET" {
+	db, _ := utils.Getdb()
+	defer db.Close()
 
-		db, _ := utils.Getdb()
-		defer db.Close()
+	row := db.QueryRow("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
 
-		row := db.QueryRow("SELECT id, email, business_name, business_url, business_color, business_logo FROM users WHERE id = ?", user)
+	var userData models.UserData
+	err := row.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
 
-		var userData models.UserData
-		err := row.Scan(&userData.Id, &userData.Email, &userData.BusinessName, &userData.BusinessUrl, &userData.BusinessColor, &userData.BusinessLogo)
-
-		if err == sql.ErrNoRows {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		} else if err != nil {
-			http.Error(w, "Error fetching category", http.StatusNotFound)
-			return
-		}
-
-		jsonData, err := json.Marshal(userData)
-
-		if err != nil {
-			http.Error(w, "Error while parsing json", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonData)
+	if err == sql.ErrNoRows {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error fetching category", http.StatusNotFound)
+		return
 	}
 
-	if r.Method == "POST" {
-		r.ParseForm()
-		newUserData := models.UserData{}
-		newUserData.Email = r.FormValue("email")
+	jsonData, err := json.Marshal(userData)
 
-		businessName := r.FormValue("business_name")
-		newUserData.BusinessName = &businessName
-		businessUrl := r.FormValue("business_url")
-		newUserData.BusinessUrl = &businessUrl
-		businessColor := r.FormValue("business_color")
-		newUserData.BusinessColor = &businessColor
-
-		db, _ := utils.Getdb()
-
-		stmt, err := db.Prepare("UPDATE users SET email=?, business_name=?, business_url=?, business_color=? WHERE id = ?")
-		if err != nil {
-			http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
-			return
-		}
-
-		defer stmt.Close()
-
-		_, err = stmt.Exec(newUserData.Email, newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, user)
-		if err != nil {
-			http.Error(w, "Error executing db operation", http.StatusInternalServerError)
-			return
-		}
-
-		response := models.GenericReponse{
-			Message: "User updated successfully",
-			Status:  "Success",
-		}
-
-		respJson, err := json.Marshal(response)
-
-		if err != nil {
-			http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(respJson)
+	if err != nil {
+		http.Error(w, "Error while parsing json", http.StatusInternalServerError)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+}
+
+func UserEditBusiness(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusInternalServerError)
+		return
+	}
+
+	newUserData := models.UserData{}
+
+	businessName := r.FormValue("business_name")
+	newUserData.BusinessName = &businessName
+	businessUrl := r.FormValue("business_url")
+	newUserData.BusinessUrl = &businessUrl
+	businessColor := r.FormValue("business_color")
+	newUserData.BusinessColor = &businessColor
+
+	db, _ := utils.Getdb()
+	defer db.Close()
+
+	stmt, err := db.Prepare("UPDATE users SET business_name=?, business_url=?, business_color=? WHERE id = ?")
+
+	if err != nil {
+		http.Error(w, "Error preparing db operation", http.StatusInternalServerError)
+		return
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(newUserData.BusinessName, newUserData.BusinessUrl, newUserData.BusinessColor, user)
+	if err != nil {
+		http.Error(w, "Error executing db operation", http.StatusInternalServerError)
+		return
+	}
+
+	if len(businessUrl) > 0 {
+		qrpath := "static/qrcodes/" + strconv.Itoa(user) + ".png"
+		err := qrcode.WriteFile(businessUrl, qrcode.Medium, 256, qrpath)
+
+		if err != nil {
+			fmt.Println("Error generating qrcode")
+		}
+	}
+
+	response := models.GenericReponse{
+		Message: "User updated successfully",
+		Status:  "Success",
+	}
+
+	respJson, err := json.Marshal(response)
+
+	if err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respJson)
+}
+
+func UserEditAccount(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(int)
+
+	if !ok {
+		http.Error(w, "Invalid user!", http.StatusForbidden)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusInternalServerError)
+		return
+	}
+
+	db, _ := utils.Getdb()
+	defer db.Close()
+
+	var args []interface{}
+	query := "UPDATE users SET"
+
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	if len(email) > 4 {
+		query += " email = ?,"
+		args = append(args, email)
+	}
+
+	if len(password) > 3 {
+		passwordhash, err := utils.GetPasswordHash(password)
+
+		if err != nil {
+			http.Error(w, "Error generating password hash", http.StatusInternalServerError)
+			return
+		}
+
+		query += " hash = ?,"
+		args = append(args, passwordhash)
+	}
+
+	query = query[:len(query)-1]
+	query += " WHERE id = ?"
+	args = append(args, user)
+
+	_, err = db.Exec(query, args...)
+
+	if err != nil {
+		http.Error(w, "Error executing db operation", http.StatusInternalServerError)
+		return
+	}
+
+	response := models.GenericReponse{
+		Message: "User updated successfully",
+		Status:  "Success",
+	}
+
+	respJson, err := json.Marshal(response)
+
+	if err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respJson)
 }
 
 func AddLogo(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +227,7 @@ func AddLogo(w http.ResponseWriter, r *http.Request) {
 	db, err := utils.Getdb()
 
 	if err != nil {
-		http.Error(w, "Error saving image", http.StatusInternalServerError)
+		http.Error(w, "Error opening db connections", http.StatusInternalServerError)
 		return
 	}
 
