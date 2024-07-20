@@ -166,7 +166,12 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20)
+
+	if err != nil {
+		http.Error(w, "Error parsing multipart form data in register", http.StatusInternalServerError)
+		return
+	}
 
 	newUser := models.NewUserData{}
 

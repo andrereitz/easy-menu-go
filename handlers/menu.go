@@ -63,14 +63,37 @@ func Menu(w http.ResponseWriter, r *http.Request) {
 
 	generic := utils.ParseSqlNullable(menuItems)
 
+	Categories, err := db.Query("SELECT * FROM Categories WHERE user = ?", businessData.Id)
+
+	if err != nil {
+		http.Error(w, "Error getting items data", http.StatusInternalServerError)
+	}
+
+	defer Categories.Close()
+
+	userCategories := make([]models.CategoryData, 0)
+	for Categories.Next() {
+		Category := models.CategoryData{}
+		err := Categories.Scan(&Category.Id, &Category.User, &Category.Title)
+
+		if err != nil {
+			http.Error(w, "Error reading categories", http.StatusInternalServerError)
+			return
+		}
+
+		userCategories = append(userCategories, Category)
+	}
+
 	type Response struct {
-		BusinessData BusinessData  `json:"business"`
-		Items        []interface{} `json:"items"`
+		BusinessData BusinessData          `json:"business"`
+		Items        []interface{}         `json:"items"`
+		Categories   []models.CategoryData `json:"categories"`
 	}
 
 	data := Response{
 		BusinessData: businessData,
 		Items:        generic,
+		Categories:   userCategories,
 	}
 
 	respJson, err := json.Marshal(data)
